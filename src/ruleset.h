@@ -320,5 +320,6 @@ using packet_header = std::array<uint32_t, F>;
  * @param filename Path to a Classbench file
  * @throw IO error, file format error
  */
-Ruleset<5> ruleset_read_classbench_file(const char* filename);
+Ruleset<5> ruleset_read_classbench_file(const char* filename,
+                                        bool reverse_priorities);
 

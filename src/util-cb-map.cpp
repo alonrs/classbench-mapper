@@ -17,6 +17,7 @@
 #include "integer-interval-set.h"
 #include "log.h"
 #include "libcommon/lib/arguments.h"
+#include "random.h"
 #include "ruleset.h"
 
 using namespace std;
@@ -39,6 +40,12 @@ static arguments args[] = {
 {"full-action",        0, 1, NULL,      "(Mode OVS Flows) Makes the OVS rules "
                                         "change src & dst IP addresses for "
                                         "checking correctness."},
+// Others
+{"seed",               0, 0, "0",       "Random seed. Use 0 for randomized "
+                                        "seed."},
+{"reverse-priorities", 0, 0, NULL,      "Reverse rule priorities; e.g., rule "
+                                        "#1 will have the highest priority, "
+                                        "and rule #N will have priority = 1"},
 {NULL,                 0, 0, NULL,      "Analyzes ClassBench ruleset files. "
                                         "Generates either a unique packet to "
                                         "match per flow, or textual file with "
@@ -194,14 +201,15 @@ generate_mapping(const Ruleset<F>& rule_db, int num_of_flows)
             // In case we can guarantee unique value for the current rule
             if (sub_interval.size() > 0) {
                 // Fill values for the current field
-                for (int i=0; i<avg_flows_per_rule; ++i) {
-                    (*output)[rule->priority][i][f] = sub_interval.random_value();
+                for (int j=0; j<avg_flows_per_rule; ++j) {
+                    (*output)[rule->priority][j][f] = 
+                        sub_interval.random_value();
                 }
                 can_guarantee = true;
             }
             else {
-                for (int i=0; i<avg_flows_per_rule; ++i) {
-                    (*output)[rule->priority][i][f] =
+                for (int j=0; j<avg_flows_per_rule; ++j) {
+                    (*output)[rule->priority][j][f] =
                         gen_uniform_random_uint32(low, high);
                 }
             }
@@ -426,8 +434,10 @@ mode_mapping()
     if (in_fname == NULL) {
         throw errorf("Mode mapping requires ruleset argument.");
     }
+
+    bool reverse = ARG_STRING(args, "reverse-priorities", 0);
     MESSAGE("Reading ruleset from \"%s\"...\n", in_fname);
-    Ruleset<F> rule_db = ruleset_read_classbench_file(in_fname);
+    Ruleset<F> rule_db = ruleset_read_classbench_file(in_fname, reverse);
 
     int num_of_flows = ARG_INTEGER(args, "num-of-flows", 0);
 
@@ -466,8 +476,10 @@ mode_ovs_flows()
     if (in_fname == NULL) {
         throw errorf("Mode mapping requires ruleset argument.");
     }
+
+    bool reverse = ARG_STRING(args, "reverse-priorities", 0);
     MESSAGE("Reading ruleset from \"%s\"...\n", in_fname);
-    Ruleset<F> rule_db = ruleset_read_classbench_file(in_fname);
+    Ruleset<F> rule_db = ruleset_read_classbench_file(in_fname, reverse);
 
     bool full_action = ARG_BOOL(args, "full-action", 0);
 
@@ -486,6 +498,10 @@ main(int argc, char** argv)
 
     // Parse arguments
     arg_parse(argc, argv, args);
+
+    int seed = ARG_INTEGER(args, "seed", 0);
+    MESSAGE("Running with seed %d\n", seed);
+    random_core::set_seed(seed);
 
     try {
         // Act according to mode

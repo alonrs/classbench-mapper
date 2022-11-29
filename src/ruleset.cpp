@@ -83,7 +83,7 @@ parse_port(uint32_t low, uint32_t high)
 }
 
 Ruleset<5>
-ruleset_read_classbench_file(const char* filename)
+ruleset_read_classbench_file(const char* filename, bool reverse_priorities)
 {
 
     Ruleset<5> output;
@@ -174,7 +174,11 @@ ruleset_read_classbench_file(const char* filename)
     // (priority 0 is invalid)
     int priority = output.size();
     for (auto& rule : output) {
-        rule.priority = priority;
+        if (reverse_priorities) {
+            rule.priority = priority;
+        } else {
+            rule.priority = rule.unique_id;
+        }
         priority--;
     }
 
