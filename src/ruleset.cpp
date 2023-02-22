@@ -11,11 +11,11 @@
  * @param ip_address The IP-mask string
  * @return The range (in 32bit space) as {start, end}
  */
-static MatchingRuleField
+static rule_field
 parse_ip_mask_address(const std::string& ip_address)
 {
     // Split to parts by delimiters "." and "/"
-    StringOperations<uint32_t> strops;
+    string_ops<uint32_t> strops;
     std::vector<uint32_t> parts =
         strops.split(ip_address, "./", strops.str2uint);
 
@@ -36,23 +36,15 @@ parse_ip_mask_address(const std::string& ip_address)
 /**
  * @brief Parses protocol range (0xXXXX/0xXXXX)
  */
-static MatchingRuleField
+static rule_field
 parse_protocol(const std::string& str)
 {
-    StringOperations<uint32_t> strops;
+    string_ops<uint32_t> strops;
     std::vector<uint32_t> values = strops.split(str, "/", strops.hex2int);
     if (values[1] != 255) {
         return {0, 255, 24};
     } else {
-        // Our PCAP generator support only ICMP, TCP, and UDP packets.
-        // Hence, convert the most three used protocols to these values,
-        // and filter out all others.
         uint32_t value = values[0];
-        if ((value != 1) && (value != 6) && (value != 17)) {
-            int v = rand() % 2;
-            if (v == 0) value = 6;
-            else if (v == 1) value = 17;
-        }
         return {value, value, 32};
     }
 }
@@ -62,7 +54,7 @@ parse_protocol(const std::string& str)
  * Sets the field as the lonest possible wildcard combination
  * of low, mask
  */
-static MatchingRuleField
+static rule_field
 parse_port(uint32_t low, uint32_t high)
 {
     // Get longest shared prefix
@@ -82,15 +74,15 @@ parse_port(uint32_t low, uint32_t high)
     return {low, high, prefix};
 }
 
-Ruleset<5>
+ruleset<5>
 ruleset_read_classbench_file(const char* filename, bool reverse_priorities)
 {
 
-    Ruleset<5> output;
+    ruleset<5> output;
     uint32_t from, to;
     uint32_t id = 1;
 
-    std::set<MatchingRule<5>> set_of_rules;
+    std::set<rule<5>> set_of_rules;
 
     // Open file
     std::fstream fs;
@@ -125,7 +117,7 @@ ruleset_read_classbench_file(const char* filename, bool reverse_priorities)
         }
 
         // Split line according to delimiters
-        StringOperations<std::string> strops;
+        string_ops<std::string> strops;
         auto fields = strops.split(line, "@ \t",
                       [](const std::string& s) { return s; });
 
@@ -143,7 +135,7 @@ ruleset_read_classbench_file(const char* filename, bool reverse_priorities)
         }
 
         // Create new rule
-        MatchingRule<5> rule;
+        rule<5> rule;
         rule.unique_id = id;
         // rule.match = (void*)rule.unique_id; // For debug
 

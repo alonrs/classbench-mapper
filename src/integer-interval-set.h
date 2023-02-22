@@ -1,38 +1,30 @@
 #pragma once
+
 #include <list>
 #include <vector>
 #include "random.h"
 
 /**
- * @brief Generates random number between low and high (inclusive)
- */
-uint32_t
-gen_uniform_random_uint32(uint32_t low, uint32_t high)
-{
-    if (low == high) return low;
-    return random_core::random_uint32() % (high-low) + low;
-}
-
-/**
  * @brief A set of integer intervals.
  */
-
-class IntegerIntervalSet {
-private:
+class integer_interval_set {
 
     struct range {
         uint32_t low;
         uint32_t high;
-        range(uint32_t low, uint32_t high) :
-            low(low), high(high) {}
+        range(uint32_t low, uint32_t high)
+        : low(low),
+          high(high)
+        {}
     };
 
-    std::list<range> _intervals;
+    std::list<range> intervals;
 
     /**
      * @brief Initiate empty list
      */
-    IntegerIntervalSet() {};
+    integer_interval_set()
+    {};
 
 public:
 
@@ -41,9 +33,9 @@ public:
      * @param low The interval low value (inclusive)
      * @param high The interval high value (inclusive)
      */
-    IntegerIntervalSet(uint32_t low, uint32_t high)
+    integer_interval_set(uint32_t low, uint32_t high)
     {
-        _intervals.push_back(range(low, high));
+        intervals.push_back(range(low, high));
     }
 
     /**
@@ -53,16 +45,17 @@ public:
      * @param high The interval high value (inclusive)
      * @returns The intersection between this and the region.
      */
-    IntegerIntervalSet remove(uint32_t low, uint32_t high)
+    integer_interval_set
+    remove(uint32_t low, uint32_t high)
     {
 
-        IntegerIntervalSet output;
+        integer_interval_set output;
         uint32_t left_cursor = low;
         uint32_t right_cursor = high;
         uint32_t maximum = high;
+        std::list<range>::iterator it;
 
-        for (std::list<range>::iterator it = _intervals.begin();
-             it != _intervals.end(); ++it) {
+        for (it = intervals.begin(); it != intervals.end(); ++it) {
             range& r = *it;
 
             // Skip intervals in case they do not intersect the rule
@@ -77,18 +70,18 @@ public:
             uint32_t max = std::min(right_cursor, r.high);
             if (max > maximum) max = maximum;
             // Add the current interval as valid interval to the output
-            output._intervals.push_back(range(min, max));
+            output.intervals.push_back(range(min, max));
 
             // Update additional interval in case required
             if (max < r.high) {
                 auto position = it;
-                _intervals.insert(++position, range(max+1, r.high));
+                intervals.insert(++position, range(max+1, r.high));
             }
 
             // Update the current interval in case required
             r.high = min - 1;
             if (min == 0 || r.high < r.low) {
-                it = _intervals.erase(it);
+                it = intervals.erase(it);
                 --it;
             }
 
@@ -108,14 +101,14 @@ public:
     {
         uint32_t val;
         // In case the rule covers nothing, return 0
-        if (_intervals.size() == 0) return 0;
-        uint32_t x = gen_uniform_random_uint32(0, _intervals.size()-1);
+        if (intervals.size() == 0) return 0;
+        uint32_t x = random_core::random_uint32(0, intervals.size()-1);
         // Get any interval within this
-        auto it = _intervals.begin();
+        auto it = intervals.begin();
         for (uint32_t i=0; i<x; ++i, ++it);
         // Get any value within the interval
         const range* intvl = &(*it);
-        val = gen_uniform_random_uint32(intvl->low, intvl->high);
+        val = random_core::random_uint32(intvl->low, intvl->high);
         return val;
     }
 
@@ -125,7 +118,7 @@ public:
     uint32_t
     size() const
     {
-        return _intervals.size();
+        return intervals.size();
     }
 
     /**
@@ -134,7 +127,7 @@ public:
     bool
     contains(uint32_t value)
     {
-        for (auto it : _intervals) {
+        for (auto it : intervals) {
             if ( (value >= it.low) && (value <= it.high) ) {
                 return true;
             }
@@ -148,10 +141,9 @@ public:
     void
     print() const
     {
-        for (auto it : _intervals) {
+        for (auto it : intervals) {
             fprintf(stderr, "[%u, %u] ", it.low, it.high);
         }
         fprintf(stderr,"\n");
     }
 };
-
