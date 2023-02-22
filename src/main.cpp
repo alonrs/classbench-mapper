@@ -19,6 +19,7 @@
 #include "log.h"
 #include "mapping.h"
 #include "random.h"
+#include "reader.h"
 #include "ruleset.h"
 
 using namespace std;
@@ -27,7 +28,7 @@ using namespace std;
 static arguments args[] = {
 // Name                R  B  Def        Help
 // Mandatory arguments
-{"out",                1, 0, NULL,      "Output filename."},
+{"out",                0, 0, NULL,      "Output filename."},
 // Mode Mapping
 {"mode-mapping",       0, 1, NULL,      "(Mode Mapping) Generate a unique "
                                         "packet for each rule in the ruleset."},
@@ -41,6 +42,10 @@ static arguments args[] = {
 {"full-action",        0, 1, NULL,      "(Mode OVS Flows) Makes the OVS rules "
                                         "change src & dst IP addresses for "
                                         "checking correctness."},
+// Mode read binary
+{"mode-read-binary",   0, 0, NULL,      "(Mode Read Binary) Reads a binary data"
+                                        "base with rules and packet headers. "
+                                        "Prints contents to stdout."},
 // Others
 {"ruleset",            0, 0, NULL,      "ClassBench ruleset to analyze."},
 {"seed",               0, 0, "0",       "Random seed. Use 0 for randomized "
@@ -191,6 +196,11 @@ mode_mapping()
         throw errorf("Mode mapping requires ruleset argument.");
     }
 
+    const char* out_filename = ARG_STRING(args, "out", NULL);
+    if (!out_filename) {
+        throw errorf("Mode mapping requires out argument.");
+    }
+
     bool reverse = ARG_STRING(args, "reverse-priorities", 0);
     MESSAGE("Reading ruleset from \"%s\"...\n", in_fname);
     ruleset<F> rule_db = ruleset_read_classbench_file(in_fname, reverse);
@@ -200,12 +210,11 @@ mode_mapping()
     // Generate mapping
     mp.run(rule_db, num_of_flows);
 
-    const char* out_filename = ARG_STRING(args, "out", NULL);
     mp.save_text_mapping(out_filename);
 
     const char *out_binary   = ARG_STRING(args, "out-binary", NULL);
     if (out_binary) {
-        mp.save_binary_format(out_filename);
+        mp.save_binary_format(out_binary);
     }
 }
 
@@ -216,6 +225,9 @@ void
 mode_ovs_flows()
 {
     const char* out_filename = ARG_STRING(args, "out", NULL);
+    if (!out_filename) {
+        throw errorf("Mode mapping requires out argument.");
+    }
     const char* in_fname = ARG_STRING(args, "ruleset", NULL);
     if (in_fname == NULL) {
         throw errorf("Mode mapping requires ruleset argument.");
@@ -229,6 +241,42 @@ mode_ovs_flows()
 
     // Create OVS flows
     ovs_flows_create(out_filename, rule_db, full_action);
+}
+
+static void
+mode_read_binary()
+{
+    const char* name = ARG_STRING(args, "mode-read-binary", NULL);
+    if (!name) {
+        throw errorf("Filename was not proiveded.");
+    }
+    reader rdr;
+    rdr.read(name);
+    std::cout << "Rules: " << rdr.get_rule_num()
+              << " fields: " << rdr.get_field_num()
+              << " headers: " << rdr.get_header_num()
+              << std::endl;
+
+    std::cout << "Rule Table:" << std::endl;
+    for (size_t i=0; i<rdr.get_rule_num(); ++i) {
+        const reader::rule &r = rdr.get_rule(i);
+        std::cout << i << ": ";
+        for (int f=0; f<rdr.get_field_num(); ++f) {
+            std::cout << r[f][0] << "-" << r[f][1] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "Header Table" << std::endl;
+    for (size_t i=0; i<rdr.get_header_num(); ++i) {
+        const reader::header &h = rdr.get_header(i);
+        std::cout << "idx " << i << " matches "
+                  << rdr.get_header_match(i) << " : ";
+        for (int f=0; f<rdr.get_field_num(); ++f) {
+            std::cout << h[f] << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 /**
@@ -253,8 +301,12 @@ main(int argc, char** argv)
             mode_mapping();
         } else if(ARG_BOOL(args, "mode-ovs-flows", 0)) {
             mode_ovs_flows();
+        } else if (ARG_BOOL(args, "mode-read-binary", 0)) {
+            mode_read_binary();
         } else {
-            throw errorf("No mode was specified");
+            MESSAGE("Please specify operation mode. "
+                    "Run with --help for more info.\n");
+            return 1;
         }
     } catch (std::exception & e) {
         MESSAGE("Error: %s\n", e.what());

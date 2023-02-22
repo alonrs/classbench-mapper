@@ -6,7 +6,7 @@
 
 #include "arguments.h"
 
-#define MAX_LINE_WIDTH 120
+#define MAX_LINE_WIDTH 170
 #define MSG_SEP "\n------\n"
 
 /* Returns argument "NAME" from "ARGS" with default value "DEF" */

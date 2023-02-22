@@ -10,10 +10,10 @@ static int position = 0;
 static std::mutex lck;
 
 void
-log_stdout(const char* msg)
+log_stderr(const char* msg)
 {
-    fprintf(stdout, "%s", msg);
-    fflush(stdout);
+    fprintf(stderr, "%s", msg);
+    fflush(stderr);
 }
 
 void

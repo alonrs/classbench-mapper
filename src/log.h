@@ -7,7 +7,7 @@
 
 typedef void(*log_callback_t)(const char*);
 
-#define LOG_SET_STDOUT log_config(NULL, log_stdout)
+#define LOG_SET_STDOUT log_config(NULL, log_stderr)
 #define LOG_SET_CALLBACK(callback) log_config(NULL, callback)
 
 #define DEBUG(...)                             \
@@ -18,7 +18,7 @@ typedef void(*log_callback_t)(const char*);
 
 #define MESSAGE(...) log_fmt_msg(__VA_ARGS__); log_flush()
 
-void log_stdout(const char* msg);
+void log_stderr(const char* msg);
 
 void log_config(const char* msg, log_callback_t callback);
 

@@ -20,8 +20,6 @@ class mapping {
     using field_mapping = std::map<int, std::vector<uint32_t>>;
     using rule_mapping = std::map<int, std::vector<packet_hdr>>;
 
-    using multi_mapping = std::map<packet_hdr, std::vector<int>>;
-
     /**
      * @brief Returns true iff "rule_idx" matches "hdr"
     */
@@ -265,25 +263,8 @@ public:
     void
     save_binary_format(const char *filename)
     {
-        multi_mapping mramp;
         zstream file;
         typename rule_mapping::const_iterator it;
-        typename multi_mapping::const_iterator it2;
-
-        MESSAGE("Checking which rules each packet header matches...\n");
-        for (it = rmap.begin(); it != rmap.end(); ++it) {
-            int rule_idx = it->first;
-            const std::vector<packet_hdr> &hdr_vec = it->second;
-
-            for (const packet_hdr &hdr : hdr_vec) {
-                mramp[hdr].push_back(rule_idx);
-                for (size_t i=rule_idx+1; i<rule_db->size(); ++i) {
-                    if (hdr_matches_rule(*rule_db, i, hdr)) {
-                        mramp[hdr].push_back(i);
-                    }
-                }
-            }
-        }
 
         MESSAGE("Writing bianry data to file %s...\n", filename);
         file.open_write(filename);
@@ -300,22 +281,24 @@ public:
             }
         }
 
+        size_t header_num = 0;
+        for (it = rmap.begin(); it != rmap.end(); ++it) {
+            header_num += it->second.size();
+        }
+
         /* Write packet database */
         file << "packetdb"
-             << mramp.size();
+             << header_num;
 
-        for (it2 = mramp.begin(); it2 != mramp.end(); ++it2) {
-            const packet_hdr &hdr = it2->first;
-            const std::vector<int> &vec = it2->second;
+        for (it = rmap.begin(); it != rmap.end(); ++it) {
+            const std::vector<packet_hdr> &hdr_vec = it->second;
+            const int &id = it->first;
 
-            for (int f=0; f<F; ++f) {
-                file << hdr[f];
-            }
-
-            file << vec.size();
-
-            for (size_t i=0; i<vec.size(); ++i) {
-                file << vec[i];
+            for (const packet_hdr &hdr : hdr_vec) {
+                for (int f=0; f<F; ++f) {
+                    file << hdr[f];
+                }
+                file << id;
             }
         }
     }

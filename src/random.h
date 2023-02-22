@@ -37,7 +37,8 @@ public:
     }
 
     template<typename Iterator>
-    void shuffle(Iterator first, Iterator last)
+    static void
+    shuffle(Iterator first, Iterator last)
     {
         std::shuffle(first, last, get_random_generator());
     }

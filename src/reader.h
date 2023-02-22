@@ -22,10 +22,10 @@ private:
 
     /* A lsit of headers. Does not change. */
     std::vector<header> headers;
-    /* A list of rule-ids that match each header. Does not change. */
-    std::vector<std::vector<int>> header_matching_rule_ids;
-    /* Mapping between rule-ids and header indices. Does not change. */
-    std::unordered_map<int, std::vector<int>> rule_id_to_hdr_idx;
+    /* The rule-id that matches each header. Does not change. */
+    std::vector<int> header_matching_rule_ids;
+    /* Mapping between rule-id to header index. Does not change. */
+    std::unordered_map<int, int> rule_id_to_hdr_idx;
 
     size_t field_num;
     size_t header_num;
@@ -55,21 +55,15 @@ private:
     {
         int idx_num, rule_idx;
 
+        headers[idx].resize(field_num);
+
         for (int i=0; i<field_num; ++i) {
             headers[idx][i] = file.read_u32();
         }
 
-        idx_num = file.read_u32();
-        header_matching_rule_ids[idx].resize(idx_num);
-        for (int i=0; i<idx_num; ++i) {
-            rule_idx = file.read_u32();
-            header_matching_rule_ids[idx][i] = rule_idx;
-            /* Reserve space for 4 header indices per rule id */
-            if (rule_id_to_hdr_idx.find(rule_idx) == rule_id_to_hdr_idx.end()) {
-                rule_id_to_hdr_idx[rule_idx].reserve(4);
-            }
-            rule_id_to_hdr_idx[rule_idx].push_back(rule_idx);
-        }
+        rule_idx = file.read_u32();
+        header_matching_rule_ids[idx] = rule_idx;
+        rule_id_to_hdr_idx[rule_idx] = idx;
     }
 
 public:
@@ -153,19 +147,19 @@ public:
     }
 
     /**
-     * @brief Returns a vector with rule IDs that match header ID "idx"
+     * @brief Returns the rule ID that match header ID "idx"
      */
-    const std::vector<int>&
-    get_header_matches(size_t idx)
+    int
+    get_header_match(size_t idx)
     {
         return header_matching_rule_ids[idx];
     }
 
     /**
-     * @brief Returns a vector of header IDs that match rule ID "idx".
+     * @brief Returns the header IDs that match rule ID "idx".
      */
-    const std::vector<int>&
-    get_header_indices(size_t matching_rule_id)
+    int
+    get_header_index(size_t matching_rule_id)
     {
         return rule_id_to_hdr_idx[matching_rule_id];
     }
