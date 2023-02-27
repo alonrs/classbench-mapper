@@ -11,6 +11,8 @@
 #include "random.h"
 #include "zstream.h"
 
+namespace cbmapper {
+
 class reader {
 public:
     using field  = std::array<uint32_t, 2>;
@@ -24,6 +26,8 @@ private:
     std::vector<header> headers;
     /* The rule-id that matches each header. Does not change. */
     std::vector<int> header_matching_rule_ids;
+    /* Rule priorities */
+    std::vector<int> rule_priorities;
     /* Mapping between rule-id to header index. Does not change. */
     std::unordered_map<int, int> rule_id_to_hdr_idx;
 
@@ -82,9 +86,11 @@ public:
         }
 
         rules.resize(file.read_u32());
+        rule_priorities.resize(rules.size());
         field_num = file.read_u32();
 
         for (size_t i=0; i<rules.size(); ++i) {
+            rule_priorities[i] = file.read_u32();
             rules[i] = read_rule(file);
         }
 
@@ -138,6 +144,15 @@ public:
     }
 
     /**
+     * @brief Returns the rule priority for rule with ID idx
+     */
+    int
+    get_rule_prio(size_t idx)
+    {
+        return rule_priorities[idx];
+    }
+
+    /**
      * @brief Returns packet header with ID "idx"
      */
     const header&
@@ -156,13 +171,15 @@ public:
     }
 
     /**
-     * @brief Returns the header IDs that match rule ID "idx".
+     * @brief Returns the header ID that match rule ID "idx".
      */
     int
     get_header_index(size_t matching_rule_id)
     {
         return rule_id_to_hdr_idx[matching_rule_id];
     }
+};
+
 };
 
 #endif

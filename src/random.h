@@ -3,6 +3,8 @@
 
 #include <random>
 
+namespace cbmapper {
+
 class random_core {
 public:
 
@@ -12,7 +14,6 @@ public:
         get_random_generator().seed(seed);
     }
 
-    /* Random uint32_t */
     static inline std::mt19937 &
     get_random_generator()
     {
@@ -42,6 +43,8 @@ public:
     {
         std::shuffle(first, last, get_random_generator());
     }
+};
+
 };
 
 #endif

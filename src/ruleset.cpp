@@ -6,6 +6,8 @@
 #include "ruleset.h"
 #include "string-ops.h"
 
+namespace cbmapper {
+
 /**
  * @brief Parse an IPv4-mask string (xxx.xxx.xxx.xxx/xx)
  * @param ip_address The IP-mask string
@@ -176,3 +178,5 @@ ruleset_read_classbench_file(const char* filename, bool reverse_priorities)
 
     return output;
 }
+
+};

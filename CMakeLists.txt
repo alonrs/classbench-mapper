@@ -19,3 +19,4 @@ target_link_libraries(util.exe pthread z)
 
 add_library(cbreader SHARED src/cbreader.cpp)
 target_include_directories(cbreader PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(cbreader pthread z)

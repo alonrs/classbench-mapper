@@ -8,6 +8,8 @@
 #include "errorf.h"
 #include "random.h"
 
+namespace cbmapper {
+
 /**
  * @brief A field is a range of 32-bit integers
  */
@@ -321,3 +323,5 @@ using packet_header = std::array<uint32_t, F>;
  */
 ruleset<5> ruleset_read_classbench_file(const char* filename,
                                         bool reverse_priorities);
+
+};

@@ -6,6 +6,8 @@
 #include <string>
 #include <zlib.h>
 
+namespace cbmapper {
+
 class zstream {
     gzFile f;
 public:
@@ -66,6 +68,8 @@ public:
         delete[] buffer;
         return str;
     }
+};
+
 };
 
 #endif

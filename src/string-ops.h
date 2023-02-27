@@ -9,6 +9,8 @@
 #include <vector>
 #include <string.h>
 
+namespace cbmapper {
+
 /**
  * @brief Operations of strings and T
  * @tparam T the typename to work with
@@ -99,6 +101,8 @@ struct string_ops {
     {
         return atoi(s.c_str());
     }
+};
+
 };
 
 #endif

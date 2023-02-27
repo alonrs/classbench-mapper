@@ -23,6 +23,7 @@
 #include "ruleset.h"
 
 using namespace std;
+using namespace cbmapper;
 
 // Holds arguments information
 static arguments args[] = {
@@ -50,7 +51,7 @@ static arguments args[] = {
 {"ruleset",            0, 0, NULL,      "ClassBench ruleset to analyze."},
 {"seed",               0, 0, "0",       "Random seed. Use 0 for randomized "
                                         "seed."},
-{"reverse-priorities", 0, 0, NULL,      "Reverse rule priorities; e.g., rule "
+{"reverse-priorities", 0, 1, NULL,      "Reverse rule priorities; e.g., rule "
                                         "#1 will have the highest priority, "
                                         "and rule #N will have priority = 1"},
 {NULL,                 0, 0, NULL,      "Analyzes ClassBench ruleset files. "
@@ -201,7 +202,7 @@ mode_mapping()
         throw errorf("Mode mapping requires out argument.");
     }
 
-    bool reverse = ARG_STRING(args, "reverse-priorities", 0);
+    bool reverse = ARG_BOOL(args, "reverse-priorities", 0);
     MESSAGE("Reading ruleset from \"%s\"...\n", in_fname);
     ruleset<F> rule_db = ruleset_read_classbench_file(in_fname, reverse);
 
@@ -233,7 +234,7 @@ mode_ovs_flows()
         throw errorf("Mode mapping requires ruleset argument.");
     }
 
-    bool reverse = ARG_STRING(args, "reverse-priorities", 0);
+    bool reverse = ARG_BOOL(args, "reverse-priorities", 0);
     MESSAGE("Reading ruleset from \"%s\"...\n", in_fname);
     ruleset<F> rule_db = ruleset_read_classbench_file(in_fname, reverse);
 
@@ -264,7 +265,7 @@ mode_read_binary()
         for (int f=0; f<rdr.get_field_num(); ++f) {
             std::cout << r[f][0] << "-" << r[f][1] << " ";
         }
-        std::cout << std::endl;
+        std::cout << "prio: " << rdr.get_rule_prio(i) << std::endl;
     }
 
     std::cout << "Header Table" << std::endl;
@@ -315,4 +316,3 @@ main(int argc, char** argv)
 
     return 0;
 }
-

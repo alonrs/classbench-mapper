@@ -7,10 +7,11 @@
 #include <map>
 #include <thread>
 
-
 #include "random.h"
 #include "ruleset.h"
 #include "zstream.h"
+
+namespace cbmapper {
 
 template <int F>
 class mapping {
@@ -94,17 +95,16 @@ class mapping {
 
             uint32_t lo = rule_db[i].fields[f].low;
             uint32_t hi = rule_db[i].fields[f].high;
-            int prio    = rule_db[i].priority;
 
-            if (out.find(prio) == out.end()) {
-                out[prio].resize(num);
+            if (out.find(i) == out.end()) {
+                out[i].resize(num);
             }
 
             integer_interval_set sub_interval = interval.remove(lo, hi);
             can_guarantee = sub_interval.size() > 0;
 
             for (int j=0; j<num; ++j) {
-                out[prio][j] = can_guarantee ?
+                out[i][j] = can_guarantee ?
                                sub_interval.random_value() :
                                random_core::random_uint32(lo, hi);
             }
@@ -157,8 +157,7 @@ public:
 
         int num = flow_num / rule_db.size();
         for (int i=0; i<rule_db.size(); i++) {
-            int priority = rule_db[i].priority;
-            rmap[priority].resize(num);
+            rmap[i].resize(num);
         }
 
         MESSAGE("Starting packet header mapping threads...\n");
@@ -175,7 +174,7 @@ public:
 
         /* Print status */
         do {
-            std::this_thread::sleep_for(std::chrono::microseconds(700));
+            std::this_thread::sleep_for(std::chrono::milliseconds(700));
         } while (!print_status(status));
 
         for (uint32_t f=0; f<F; ++f) {
@@ -197,12 +196,11 @@ public:
         MESSAGE("\nUpdating unique packet headers... \n");
         for (uint32_t f=0; f<F; ++f) {
             for (int i=0; i<rule_db.size(); i++) {
-                int priority = rule_db[i].priority;
                 if (non_unique.find(i) != non_unique.end()) {
                     continue;
                 }
                 for (int j=0; j<num; j++) {
-                    rmap[priority][j][f] = field_values[f][priority][j];
+                    rmap[i][j][f] = field_values[f][i][j];
                 }
             }
         }
@@ -216,10 +214,9 @@ public:
         for (auto idx : non_unique) {
             print_progress("Handling non-unique rules", counter++,
                            non_unique.size());
-            int priority = rule_db[idx].priority;
             valid = gen_packet(rule_db, idx, packet);
             if (valid) {
-                rmap[priority].push_back(packet);
+                rmap[idx].push_back(packet);
             } else {
                 unreachable_rules++;
             }
@@ -229,6 +226,20 @@ public:
         if (unreachable_rules > 0) {
             MESSAGE("Could not generate mapping for %d rules.\n",
                 unreachable_rules);
+        }
+
+        /* Check that mapping is correct */
+        MESSAGE("Checking that the generated mapping is correct...\n");
+        typename rule_mapping::const_iterator it;
+        for (it = rmap.begin(); it != rmap.end(); ++it) {
+            const std::vector<packet_hdr> &hdr_vec = it->second;
+            const int &id = it->first;
+            for (const packet_hdr &hdr : hdr_vec) {
+                if (!hdr_matches_rule(rule_db, id, hdr)) {
+                    MESSAGE("Error! \n");
+                    exit(1);
+                }
+            }
         }
     }
 
@@ -275,6 +286,7 @@ public:
              << F;
 
         for (size_t i=0; i<rule_db->size(); ++i) {
+            file << rule_db->at(i).priority;
             for (int f=0; f<F; ++f) {
                 file << rule_db->at(i).fields[f].low
                      << rule_db->at(i).fields[f].high;
@@ -302,6 +314,8 @@ public:
             }
         }
     }
+
+};
 
 };
 

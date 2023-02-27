@@ -50,7 +50,7 @@ The ruleset manager library will be generated in **./build/libcbreader.so**.
 The library API header file is [here](src/cbreader.h)
 
 # Others
-If you happen to use this tool in an academic paper,
+If you happen to use this tool for an academic paper,
 please cite *Scaling Open vSwitch with a Computational Cache*
 (USENIX, NSDI 2022).
 

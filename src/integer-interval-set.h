@@ -4,6 +4,8 @@
 #include <vector>
 #include "random.h"
 
+namespace cbmapper {
+
 /**
  * @brief A set of integer intervals.
  */
@@ -146,4 +148,6 @@ public:
         }
         fprintf(stderr,"\n");
     }
+};
+
 };

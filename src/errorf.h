@@ -4,6 +4,8 @@
 #include <sstream>
 #include <stdexcept>
 
+namespace cbmapper {
+
 // Create an exception with an arbitrary message using printf convention
 #define errorf(...) error_obj::create() <<  "Exception: (" <<  \
     __func__ << "@" << __FILE__ << ":" << __LINE__ << ") " << \
@@ -66,3 +68,4 @@ public:
     }
 };
 
+};
