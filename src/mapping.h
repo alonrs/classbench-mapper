@@ -62,7 +62,7 @@ class mapping {
 
             previous_match = false;
             for (int r=0; r<rule_idx-1; ++r) {
-                if (!hdr_matches_rule(rule_db, rule_idx, out)) {
+                if (!hdr_matches_rule(rule_db, r, out)) {
                     continue;
                 }
                 previous_match = true;
@@ -150,15 +150,13 @@ public:
         std::array<field_mapping,   F> field_values;
         std::array<std::thread,     F> threads;
         std::array<std::atomic<int>,F> status;
+        typename rule_mapping::const_iterator it;
         packet_header<F> packet;
         bool valid;
 
         this->rule_db = &rule_db;
 
         int num = flow_num / rule_db.size();
-        for (int i=0; i<rule_db.size(); i++) {
-            rmap[i].resize(num);
-        }
 
         MESSAGE("Starting packet header mapping threads...\n");
         for (uint32_t f=0; f<F; ++f) {
@@ -194,22 +192,38 @@ public:
 
         /* Update unique packets */
         MESSAGE("\nUpdating unique packet headers... \n");
-        for (uint32_t f=0; f<F; ++f) {
-            for (int i=0; i<rule_db.size(); i++) {
-                if (non_unique.find(i) != non_unique.end()) {
-                    continue;
+        for (int i=0; i<rule_db.size(); i++) {
+            if (non_unique.find(i) != non_unique.end()) {
+                continue;
+            }
+            /* Count the number of valid mappings */
+            std::vector<int> valid_indices;
+            valid_indices.reserve(num);
+
+            for (int j=0; j<num; j++) {
+                for (uint32_t f=0; f<F; ++f) {
+                    if (field_values[f][i][j]) {
+                        valid_indices.push_back(j);
+                        break;
+                    }
                 }
-                for (int j=0; j<num; j++) {
-                    rmap[i][j][f] = field_values[f][i][j];
+            }
+
+            rmap[i].reserve(num);
+            rmap[i].resize(valid_indices.size());
+            for (size_t j=0; j<valid_indices.size(); ++j) {
+                size_t idx = valid_indices[j];
+                for (uint32_t f=0; f<F; ++f) {
+                    rmap[i][j][f] = field_values[f][i][idx];
                 }
             }
         }
 
-        // Update mapping for non-unique rules
+        /* Update mapping for non-unique rules */
         MESSAGE("Non-unique rules: %lu\n", non_unique.size());
         int unreachable_rules = 0;
 
-        // Handle non-unique rules...
+        /* Handle non-unique rules... */
         int counter = 0;
         for (auto idx : non_unique) {
             print_progress("Handling non-unique rules", counter++,
@@ -230,7 +244,6 @@ public:
 
         /* Check that mapping is correct */
         MESSAGE("Checking that the generated mapping is correct...\n");
-        typename rule_mapping::const_iterator it;
         for (it = rmap.begin(); it != rmap.end(); ++it) {
             const std::vector<packet_hdr> &hdr_vec = it->second;
             const int &id = it->first;
@@ -277,7 +290,7 @@ public:
         zstream file;
         typename rule_mapping::const_iterator it;
 
-        MESSAGE("Writing bianry data to file %s...\n", filename);
+        MESSAGE("Writing bianry data to file %s... ", filename);
         file.open_write(filename);
 
         /* Write rule database */
@@ -297,6 +310,7 @@ public:
         for (it = rmap.begin(); it != rmap.end(); ++it) {
             header_num += it->second.size();
         }
+        MESSAGE("total packet headers: %lu \n", header_num);
 
         /* Write packet database */
         file << "packetdb"
