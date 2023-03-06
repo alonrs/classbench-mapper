@@ -288,6 +288,8 @@ cbreader_select_headers(cbreader *cbr,
                         const uint32_t **hdr_data,
                         uint32_t *results)
 {
+    int idx, rule_idx, hdr_idx, counter;
+
     if (!cbr) {
         return -EINVAL;
     }
@@ -298,16 +300,23 @@ cbreader_select_headers(cbreader *cbr,
             release_active(cbr, ver);
             return 0;
         }
+
+        counter = 0;
         for (int i=0; i<hdr_num; ++i) {
-            int idx = random_core::random_uint32() % avaialble_rules.size();
-            int rule_idx = avaialble_rules[idx];
-            int hdr_idx = cbr->rdr.get_header_index(rule_idx);
+            idx = random_core::random_uint32() % avaialble_rules.size();
+            rule_idx = avaialble_rules[idx];
+            hdr_idx = cbr->rdr.get_header_index(rule_idx);
+            if (hdr_idx == -1) {
+                continue;
+            }
+
             const reader::header &hdr = cbr->rdr.get_header(hdr_idx);
-            hdr_data[i] = (const uint32_t*)&hdr[0];
-            results[i] = rule_idx;
+            hdr_data[counter] = (const uint32_t*)&hdr[0];
+            results[counter] = rule_idx;
+            counter++;
         }
         release_active(cbr, ver);
-        return hdr_num;
+        return counter;
     } catch (std::exception &e) {
         free((void*)msg);
         msg = strdup(e.what());

@@ -29,7 +29,7 @@ private:
     /* Rule priorities */
     std::vector<int> rule_priorities;
     /* Mapping between rule-id to header index. Does not change. */
-    std::unordered_map<int, int> rule_id_to_hdr_idx;
+    std::unordered_map<int, std::vector<int>> rule_id_to_hdr_idx;
 
     size_t field_num;
     size_t header_num;
@@ -67,7 +67,7 @@ private:
 
         rule_idx = file.read_u32();
         header_matching_rule_ids[idx] = rule_idx;
-        rule_id_to_hdr_idx[rule_idx] = idx;
+        rule_id_to_hdr_idx[rule_idx].push_back(idx);
     }
 
 public:
@@ -171,12 +171,19 @@ public:
     }
 
     /**
-     * @brief Returns the header ID that match rule ID "idx".
+     * @brief Returns a header ID that match rule ID "idx", or -1 if no such
+     * was found.
      */
     int
     get_header_index(size_t matching_rule_id)
     {
-        return rule_id_to_hdr_idx[matching_rule_id];
+        auto it = rule_id_to_hdr_idx.find(matching_rule_id);
+        if (it == rule_id_to_hdr_idx.end()) {
+            return -1;
+        }
+        const std::vector<int> &vec = it->second;
+        int i = random_core::random_uint32() % vec.size();
+        return vec[i];
     }
 };
 
