@@ -5,7 +5,8 @@ project(ClassbenchMapper LANGUAGES CXX)
 # Set custom debug and release flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -march=native")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -march=native \
-                             -DNDEBUG -flto")
+                             -DNDEBUG -flto -static-libstdc++ \
+                             -static-libgcc")
 
 # Set a default build type if none was specified
 if(NOT CMAKE_BUILD_TYPE)
