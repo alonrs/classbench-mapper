@@ -151,6 +151,7 @@ public:
         std::array<std::thread,     F> threads;
         std::array<std::atomic<int>,F> status;
         typename rule_mapping::const_iterator it;
+        typename rule_mapping::iterator it2;
         packet_header<F> packet;
         bool valid;
 
@@ -242,6 +243,36 @@ public:
                 unreachable_rules);
         }
 
+        /* Remove duplicate headers */
+        MESSAGE("Removing duplicate headers...\n");
+        for (it2 = rmap.begin(); it2 != rmap.end(); ++it2) {
+            std::vector<packet_hdr> &hdr_vec = it2->second;
+            std::sort(hdr_vec.begin(), hdr_vec.end(),
+            [] (const packet_hdr &a, const packet_hdr &b) {
+                for (int i=0; i<F; ++i) {
+                    if (a[i] < b[i]) {
+                        return true;
+                    } else if (a[i] > b[i]) {
+                        return false;
+                    }
+                }
+                return &a < &b;
+            });
+
+            auto it3 = std::unique(hdr_vec.begin(), hdr_vec.end(),
+            [] (const packet_hdr &a, const packet_hdr &b) {
+                for (int i=0; i<F; ++i) {
+                    if (a[i] != b[i]) {
+                        return false;
+                    }
+                }
+                /* Identical headers */
+                return true;
+            });
+            size_t size = std::distance(hdr_vec.begin(), it3);
+            hdr_vec.resize(size);
+        }
+
         /* Check that mapping is correct */
         MESSAGE("Checking that the generated mapping is correct...\n");
         for (it = rmap.begin(); it != rmap.end(); ++it) {
@@ -263,20 +294,27 @@ public:
     void
     save_text_mapping(const char *filename)
     {
+        typename rule_mapping::const_iterator it;
+
         MESSAGE("Writing mapping to file \"%s\"...\n", filename);
         FILE* file_desc = fopen(filename, "w");
         if (!file_desc) {
             throw errorf("cannot open output filename for writing.");
         }
-        for (auto map_it : rmap) {
-            for (auto pck_it : map_it.second) {
-                fprintf(file_desc, "%d:", map_it.first);
-                for (int i=0; i<F; ++i) {
-                    fprintf(file_desc, " %u", pck_it[i]);
+
+        for (it = rmap.begin(); it != rmap.end(); ++it) {
+            const std::vector<packet_hdr> &hdr_vec = it->second;
+            const int &id = it->first;
+
+            for (const packet_hdr &hdr : hdr_vec) {
+                fprintf(file_desc, "%d:", id);
+                for (int f=0; f<F; ++f) {
+                    fprintf(file_desc, " %u", hdr[f]);
                 }
                 fprintf(file_desc, "\n");
             }
         }
+
         fclose(file_desc);
     }
 
